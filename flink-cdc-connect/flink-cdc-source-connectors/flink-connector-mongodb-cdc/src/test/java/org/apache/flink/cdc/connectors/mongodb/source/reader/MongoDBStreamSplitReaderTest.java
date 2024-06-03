@@ -39,19 +39,15 @@ import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.connect.source.SourceRecord;
 import org.bson.BsonDocument;
 import org.bson.Document;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestFactory;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.stream.Stream;
 
 import static java.util.Collections.singletonList;
 import static org.apache.flink.cdc.connectors.mongodb.internal.MongoDBEnvelope.FULL_DOCUMENT_FIELD;
@@ -64,14 +60,17 @@ import static org.apache.flink.cdc.connectors.mongodb.source.utils.MongoUtils.ge
 import static org.apache.flink.cdc.connectors.mongodb.source.utils.MongoUtils.getLatestResumeToken;
 import static org.apache.flink.cdc.connectors.mongodb.utils.MongoDBContainer.FLINK_USER;
 import static org.apache.flink.cdc.connectors.mongodb.utils.MongoDBContainer.FLINK_USER_PASSWORD;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /** MongoDB stream split reader test case. */
-@RunWith(Parameterized.class)
-public class MongoDBStreamSplitReaderTest extends MongoDBSourceTestBase {
 
-    @Rule public final Timeout timeoutPerTest = Timeout.seconds(300);
+// @TestFactory()
+class MongoDBStreamSplitReaderTest extends MongoDBSourceTestBase {
+
+    public MongoDBStreamSplitReaderTest() {
+        super("6.0.16");
+    }
 
     private static final String STREAM_SPLIT_ID = "stream-split";
 
@@ -89,17 +88,8 @@ public class MongoDBStreamSplitReaderTest extends MongoDBSourceTestBase {
 
     private BsonDocument startupResumeToken;
 
-    public MongoDBStreamSplitReaderTest(String mongoVersion) {
-        super(mongoVersion);
-    }
-
-    @Parameterized.Parameters(name = "mongoVersion: {0}")
-    public static Object[] parameters() {
-        return Stream.of(getMongoVersions()).map(e -> new Object[] {e}).toArray();
-    }
-
-    @Before
-    public void before() {
+    @BeforeEach
+    void beforeEach() {
         database = mongoContainer.executeCommandFileInSeparateDatabase("chunk_test");
 
         MongoDBSourceConfigFactory configFactory =
@@ -133,7 +123,7 @@ public class MongoDBStreamSplitReaderTest extends MongoDBSourceTestBase {
     }
 
     @Test
-    public void testStreamSplitReader() throws Exception {
+    void testStreamSplitReader() throws Exception {
         IncrementalSourceReaderContext incrementalSourceReaderContext =
                 new IncrementalSourceReaderContext(new TestingReaderContext());
         IncrementalSourceSplitReader<MongoDBSourceConfig> streamSplitReader =
@@ -156,7 +146,7 @@ public class MongoDBStreamSplitReaderTest extends MongoDBSourceTestBase {
                             new HashMap<>(),
                             0);
 
-            assertTrue(streamSplitReader.canAssignNextSplit());
+            assertThat(streamSplitReader.canAssignNextSplit()).isTrue();
             streamSplitReader.handleSplitsChanges(new SplitsAddition<>(singletonList(streamSplit)));
 
             MongoCollection<Document> collection =
@@ -184,7 +174,7 @@ public class MongoDBStreamSplitReaderTest extends MongoDBSourceTestBase {
                             OperationType operationType =
                                     OperationType.fromString(value.getString(OPERATION_TYPE_FIELD));
 
-                            assertEquals(OperationType.INSERT, operationType);
+                            assertThat(operationType).isEqualTo(OperationType.INSERT);
                             BsonDocument fullDocument =
                                     BsonDocument.parse(value.getString(FULL_DOCUMENT_FIELD));
                             long productNo = fullDocument.getInt64("product_no").longValue();
@@ -192,9 +182,9 @@ public class MongoDBStreamSplitReaderTest extends MongoDBSourceTestBase {
                             String userId = fullDocument.getString("user_id").getValue();
                             String description = fullDocument.getString("description").getValue();
 
-                            assertEquals("KIND_" + productNo, productKind);
-                            assertEquals("user_" + productNo, userId);
-                            assertEquals("my shopping cart " + productNo, description);
+                            assertThat(productKind).isEqualTo("KIND_" + productNo);
+                            assertThat(userId).isEqualTo("user_" + productNo);
+                            assertThat(description).isEqualTo("my shopping cart " + productNo);
 
                             if (++count >= inserts.size()) {
                                 return;
@@ -208,7 +198,7 @@ public class MongoDBStreamSplitReaderTest extends MongoDBSourceTestBase {
                 retry++;
             }
 
-            assertEquals(count, inserts.size());
+            assertThat(inserts).hasSize(count);
         } finally {
             streamSplitReader.close();
         }

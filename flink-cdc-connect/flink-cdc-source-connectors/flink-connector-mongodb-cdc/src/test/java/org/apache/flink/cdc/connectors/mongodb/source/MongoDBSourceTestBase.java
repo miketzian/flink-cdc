@@ -28,6 +28,7 @@ import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import org.junit.Before;
 import org.junit.Rule;
+import org.junit.jupiter.api.extension.TestInstancePostProcessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
@@ -86,4 +87,9 @@ public class MongoDBSourceTestBase {
     }
 
     private static final Logger LOG = LoggerFactory.getLogger(MongoDBSourceTestBase.class);
+
+
+    public static class MongoVersionExtension implements TestInstancePostProcessor {
+
+    }
 }
