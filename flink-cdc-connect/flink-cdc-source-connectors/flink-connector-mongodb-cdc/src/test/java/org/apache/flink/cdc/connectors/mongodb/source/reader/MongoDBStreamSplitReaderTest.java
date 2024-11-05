@@ -63,12 +63,7 @@ import static org.apache.flink.cdc.connectors.mongodb.utils.MongoDBContainer.FLI
 import static org.assertj.core.api.Assertions.assertThat;
 
 /** MongoDB stream split reader test case. */
-<<<<<<< HEAD
-
-// @TestFactory()
-=======
 @Timeout(300)
->>>>>>> 6a8aa13e (Added some more migrations)
 class MongoDBStreamSplitReaderTest extends MongoDBSourceTestBase {
 
     public MongoDBStreamSplitReaderTest() {
